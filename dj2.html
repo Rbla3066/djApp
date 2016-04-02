@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>DJ</title>
+	<script class="jsbin" src="http://ajax.googleapis.com/ajax/libs/jquery/1/jquery.min.js"></script>
+	<script src="jqui.js"></script>
+	<script type="text/javascript" src="compiled.js"></script>
+	<script src="wad.js"></script>
+	<style>
+		html, body{
+			width: 100%;
+			height: 100%;
+		}
+		#wrapper{
+			position: inherit;
+			margin: auto;
+			width: 750px;
+			height: 750px;
+		}
+		.soundBox{
+			width: 300px;
+			height: 100px;
+		}
+	</style>
+	<link rel="stylesheet" href="theme.css">
+    <link rel="stylesheet" href="jqui.css"> 
+	<link rel="stylesheet" href="struct.css">
+
+</head>
+<body>
+<div id="container" class="ui-widget">
+<div id="wrapper" class="ui-widget-content">
+<div class="ui-widget-header">Music Fun</div>
+	<input type='file' id="input" class="ui-widget-content">
+	<button id="record"></button>
+<!--<div id="draggable" class="ui-widget-content"></div> -->
+</div>
+</div>
+<script type="text/javascript">
+$(window).ready(function(){
+
+
+var context;
+window.addEventListener('load', init, false);
+function init() {
+  try {
+    // Fix up for prefixing
+    window.AudioContext = window.AudioContext||window.webkitAudioContext;
+    context = new AudioContext();
+    console.log(context)
+  }
+  catch(e) {
+    alert('Web Audio API is not supported in this browser');
+  }
+}
+function loadSound(url) {
+  var request = new XMLHttpRequest();
+  request.open('GET', url, true);
+  request.responseType = 'arraybuffer';
+
+  // Decode asynchronously
+  request.onload = function() {
+    context.decodeAudioData(request.response, function(buffer){
+      dogBarkingBuffer = buffer
+      var source = context.createBufferSource(); // creates a sound source
+  	source.buffer = buffer;                    // tell the source which sound to play
+  	source.connect(context.destination);    // connect the source to the context's destination (the speakers)
+  	source.start(0,8,10);
+  		console.log(source.buffer)
+      console.log(dogBarkingBuffer)
+    }, function(err){
+    	console.log(err)
+    });
+  }
+  request.send();
+}
+//loadSound("bowie.ogg");
+
+
+
+	$("#record").button({
+		text: false,
+		icons: {primary: "ui-icon-bullet"}
+	}).css("width", "29px").css("height", "25px");
+	$("input").button();
+	var songs = {}
+	var sounds = {}
+	function playMusic(src, size, name){
+		var secs = size*0.00004130001986;
+		songs[name] = new Wad({
+	   		source : src,
+	   		env : {hold : secs}
+	   	});
+
+
+
+
+
+
+
+
+	   	console.log(songs[name])
+	   	elem = document.createElement("div");
+	   	$("#wrapper").append($(elem))
+	   	$(elem).addClass("soundBox")
+	   	$(elem).addClass("ui-widget-content")
+	   	button = document.createElement("button")
+	   	$(elem).append("<div class='ui-widget-header'>"+name.split(".")[0]+"</div>")
+	   	$(elem).append(button)
+	   	$(elem).append('<audio id="'+size+'" controls><source type="audio/mp3" src="'+src+'"></audio>')
+	   	console.log($("#"+size))
+	   	$(button).addClass("playBtn")
+	   	$(button).data("target", size)
+	   	$(button).button({
+	   		text: false,
+	   		icons: {primary: "ui-icon-circle-triangle-e"}
+	    });
+	   	$(elem).draggable();
+	   	$(elem).resizable();
+	   	$(".ui-button-text").css("display", "none");
+	   	$(".playBtn").css("width", "29px");
+	   	$(".playBtn").css("height", "25px");
+	}
+	function readURL(input) {
+		var files = input.prop("files");
+		console.log(files[0]);
+		var name = files[0].name;
+	 	if (files && files[0]) {
+	   		var reader = new FileReader();
+	    	reader.onload = function (e) {
+	    		console.log(e)
+	    		//playMusic(e.target.result, parseInt(e.total), name);
+	    		playSound(e.target.result, name)
+	   		};
+	   		reader.readAsDataURL(files[0]);
+	  	}
+	}
+	$("#input").on("change", function() {
+		readURL($(this));
+	});
+	$("body").on("click", ".playBtn", function(){
+		console.log($(this).data("target"))
+		//songs[$(this).data("target")].play();
+		var audio = document.getElementById($(this).data("target"));
+		audio.play();
+	});
+	
+function playSound(url, name){
+	var request = new XMLHttpRequest();
+  	request.open('GET', url, true);
+ 	request.responseType = 'arraybuffer';
+ 	request.onload = function() {
+    	context.decodeAudioData(request.response, function(buffer){
+     	sounds[name] = buffer;
+      	var source = context.createBufferSource(); // creates a sound source
+  		source.buffer = buffer;                    // tell the source which sound to play
+  		source.connect(context.destination);
+  		//var start = $(element).data("startTime")
+  		//var end = $(element).data("totalTime")
+  		//var delay = $(element).data("delay")  // connect the source to the context's destination (the speakers)
+  		source.start(0,3,3);
+  		console.log("success")
+  		console.log(sounds[name])
+    }, function(err){
+    	console.log(err)
+    });
+  };
+  request.send();
+};
+
+});
+</script>
+</body>
+</html>

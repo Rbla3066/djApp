@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>DJ</title>
+	<script class="jsbin" src="http://ajax.googleapis.com/ajax/libs/jquery/1/jquery.min.js"></script>
+	<script src="jqui.js"></script>
+	<script type="text/javascript" src="compiled.js"></script>
+	<script src="wad.js"></script>
+	<style>
+		html, body{
+			width: 100%;
+			height: 100%;
+		}
+		#input{
+			width: 0.1px;
+			height: 0.1px;
+			opacity: 0;
+			overflow: hidden;
+			position: absolute;
+			z-index: -1;
+		}
+		#wrapper{
+			z-index: 10;
+			position: inherit;
+			margin: auto;
+			width: 80%;
+			min-height: 600px;
+		}
+		.soundBox{
+			position: inherit;
+			width: 300px;
+		}
+		button{
+			position: inherit;
+			margin: 7.5px;
+		}
+		.ui-slider{
+			position: inherit;
+			margin: auto;
+			margin-top: 10px;
+			margin-bottom: 5px;
+		}
+		.exitPlayerBtn{
+			float: right;
+		}
+		.timer{
+			position: inherit;
+			text-align: center;
+			margin-top: 7.5px;
+			margin-bottom: 7.5px;
+		}
+		.ui-widget-header{
+			line-height: 40px;
+			text-align: center;
+		}
+	</style>
+	<link rel="stylesheet" href="theme.css">
+    <link rel="stylesheet" href="jqui.css"> 
+	<link rel="stylesheet" href="struct.css">
+
+</head>
+<body>
+<div id="container" class="ui-widget">
+<div id="wrapper" class="ui-widget-content ui-corner-all">
+<div class="ui-widget-header ui-corner-top"><h1>Music Fun</h1></div>
+	<input type='file' id="input" class="ui-widget-content">
+	<button id="importAudio"></button>
+<!--<div id="draggable" class="ui-widget-content"></div> -->
+</div>
+</div>
+<script type="text/javascript">
+$(window).ready(function(){
+	$("#importAudio").button({
+		label: "Add Audio File"
+	});
+	$("#importAudio").click(function(){
+		$("#input").click();
+	})
+	var sounds = {}
+	function loadAudioFile(src, name, size){
+		var secs = Math.floor(size*0.00004130001986);
+		var startTime = 0;
+		var endTime = secs-startTime;
+		elem = document.createElement("div");
+	   	$("#wrapper").append($(elem))
+	   	$(elem).addClass("soundBox")
+	   	$(elem).attr("id", "boxPlayer"+size)
+	   	$(elem).addClass("ui-widget-content")
+	   	$(elem).addClass("ui-corner-all")
+	   	button = document.createElement("button")
+	   	var header = name.split(".")[0];
+	   	if(header.length > 20) header = header.substring(0, 20) + "..";
+	   	$(elem).append("<div class='ui-widget-header ui-corner-top playerHeader'>"+header+"<button class='exitPlayerBtn' id='"+size+"Exit' data-size='"+size+"'></button></div>");
+	   	$("#"+size+"Exit").button({
+	   		text: false,
+	   		icons: {primary: "ui-icon-closethick"}
+	   	})
+	   	$(elem).append(button)
+	   	pause = document.createElement("button");
+	   	$(elem).append(pause)
+	   	timeCount = document.createElement("div")
+	   	$(timeCount).attr("id", size+"time");
+	   	$(timeCount).text("0:00");
+	   	$(timeCount).data("secs", 0);
+	   	time = document.createElement("div")
+	   	$(button).data("size", size)
+	   	$(button).data("delay", 0);
+	   	$(elem).append(time)
+	   	$(time).attr("id", size+"slider");
+	   	$(time).slider({
+	   		animate: true,
+	   		min: 0,
+	   		orientation: "horizontal",
+	   		max: secs,
+	   		step: 1,
+	   		value: 0,
+	   		change: function( event, ui ) {
+	   			var newTime = ui.value;
+	   			var seconds = newTime % 60;
+	   			var minutes = Math.floor(newTime/60);
+	   			if(seconds.toString().length == 1) seconds = "0"+seconds;
+	   			$("#"+size+"time").html(minutes+":"+seconds);
+	   			$("#"+size+"btn").data("startTime", newTime);	
+	   		},
+	   		stop: function( event, ui ) {
+	   			playSound(src, name, size, size+"btn")
+	   			$("#"+size+"btn").button("option", "disabled", true)
+	   			$("#"+size+"pause").button("option", "disabled", false)
+	   		}
+	   	})
+	   	$(time).data("name", name)
+	   	$(timeCount).addClass("timer")
+	   	$(time).css("width", "150px");
+	   	$(elem).append(timeCount);
+	   	$(button).addClass("playBtn")
+	   	$(button).attr("id", size+"btn")
+	   	$(button).data("source", src)
+	   	$(button).data("name", name)
+	   	$(button).data("startTime", startTime);
+	   	$(button).data("endTime", endTime);
+	   	$(button).button({
+	   		text: false,
+	   		icons: {primary: "ui-icon-play"}
+	    });
+	   	$(pause).addClass("pauseBtn");
+	   	$(pause).attr("id", size+"pause");
+	   	$(pause).button({
+	   		text: false,
+	   		icons: {primary: "ui-icon-pause"},
+	   		disabled: true
+	   	})
+	   	
+	   	$(elem).draggable({
+	   		containment: "parent",
+	   		snap: true,
+	   		snapMode: "outer",
+	   		snapTolerance: 40
+	   	});
+	   	$(elem).resizable();
+	   	$(".ui-button-icon-only").css("width", "29px");
+	   	$(".ui-button-icon-only").css("height", "25px");
+	   	$(elem).toggle();
+	   	$(elem).toggle("drop");
+	};
+	function readURL(input) {
+		var files = input.prop("files");
+		console.log(files[0]);
+		var name = files[0].name;
+	 	if (files && files[0]) {
+	   		var reader = new FileReader();
+	    	reader.onload = function (e) {
+	    		console.log(e)
+	    		loadAudioFile(e.target.result, name, parseInt(e.total))
+	   		};
+	   		reader.readAsDataURL(files[0]);
+	  	};
+	};
+	$("#input").on("change", function() {
+		readURL($(this));
+	});
+	var context;
+	window.addEventListener('load', init, false);
+	function init() {
+	  try {
+	    window.AudioContext = window.AudioContext||window.webkitAudioContext;
+	    context = new AudioContext();
+	    console.log(context)
+	  }
+	  catch(e) {
+	    alert('Web Audio API is not supported in this browser');
+	  }
+	}
+	function playSound(url, name, size, elem){
+		var request = new XMLHttpRequest();
+	  	request.open('GET', url, true);
+	 	request.responseType = 'arraybuffer';
+	 	request.onload = function() {
+	    	context.decodeAudioData(request.response, function(buffer){
+	     	sounds[name] = buffer;
+	      	var source = context.createBufferSource(); // creates a sound source
+	  		source.buffer = buffer;                    // tell the source which sound to play
+	  		source.connect(context.destination);
+	  		var start = $("#"+elem).data("startTime")
+	  		var end = $("#"+elem).data("endTime")
+	  		var delay = $("#"+elem).data("delay")  // connect the source to the context's destination (the speakers)
+	  		source.start(delay, start, end);
+	  		ticking = setInterval(function(){
+	  			$("#"+size+"slider").slider( "value", $("#"+size+"slider").slider( "value" ) + 1)
+	  		}, 1000);
+	  		$( "#"+size+"slider" ).on( "slidestop", function( event, ui ) {
+	  			clearInterval(ticking);
+	  			$("#"+size+"btn").button( "option", "disabled", true );
+	  			$("#"+size+"pause").button("option", "disabled", false);
+	  			source.stop();
+	  		} );
+	  		$("#"+size+"pause").on("click", function(){
+	  			$("#"+size+"pause").button("option", "disabled", true);
+	  			clearInterval(ticking);
+	  			source.stop();
+	  			$("#"+size+"btn").button( "option", "disabled", false );
+	  		});
+	  		$("body").on("click", "#"+size+"Exit", function(){
+	  			source.stop();
+	  			$(this).unbind()
+	  		});
+	  		console.log("success")
+	  		console.log(sounds[name])
+	    }, function(err){
+	    	console.log(err)
+	    });
+	  };
+	  request.send();
+	};
+	$("body").on("click", ".playBtn", function(){
+		var url = $(this).data("source");
+		var name = $(this).data("name");
+		var size = $(this).data("size");
+		var elem = $(this).attr("id");
+		$("#"+size+"pause").button("option", "disabled", false);
+		$( this ).button( "option", "disabled", true );
+		playSound(url, name, size, elem);
+	});
+	$("body").on("click", ".exitPlayerBtn", function(){
+		$(this).parent().parent().remove()
+	})
+});
+</script>
+</body>
+</html>
